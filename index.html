@@ -338,11 +338,10 @@
   <section class="hero" aria-label="Voyage au Japon">
     <div class="hero-inner">
       <p class="kicker">5-17 juillet 2026</p>
-      <h1>Kansai vers Kyushu</h1>
+      <h1>2 frere 1 voyage</h1>
       <p>13 jours de trains, temples, onsen, velo et ferry: Osaka, Nara, Koya-san, Hiroshima, Shimanami, Shikoku, Beppu, Fukuoka, Aso et Kumamoto.</p>
       <div class="stats" aria-label="Resume du voyage">
         <span>13 jours</span>
-        <span>2 voyageurs</span>
         <span>Osaka -> Kumamoto</span>
       </div>
     </div>
@@ -362,7 +361,7 @@
   </main>
 
   <footer>
-    <strong>Loris &amp; Clément</strong> - itineraire construit depuis <code>program.md</code>.
+    Made with love by Loris
   </footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -374,7 +373,8 @@
         title: "Osaka -> Dotonbori",
         text: "Arrivee et installation le matin. Apres-midi a Dotonbori / Namba, a pied ou en metro. Nuit a Osaka.",
         chips: ["Metro 10-30 min", "Gastronomie", "Nuit Osaka"],
-        points: [[34.6937, 135.5023], [34.6687, 135.5012]]
+        marker: [34.6687, 135.5012],
+        points: [[34.6937, 135.5023], [34.6687, 135.5012], [34.6937, 135.5023]]
       },
       {
         day: 2,
@@ -382,7 +382,8 @@
         title: "Osaka -> Nara",
         text: "Depart vers 08:00 pour Nara. Todai-ji et parc pendant 3 a 4 h, puis retour ou nuit sur place.",
         chips: ["30-45 min", "Todai-ji", "Parc de Nara"],
-        points: [[34.6937, 135.5023], [34.6851, 135.8048]]
+        marker: [34.6851, 135.8048],
+        points: [[34.6937, 135.5023], [34.6851, 135.8048], [34.6937, 135.5023]]
       },
       {
         day: 3,
@@ -398,7 +399,7 @@
         title: "Koya-san -> Himeji -> Kobe",
         text: "Retour matinal vers Osaka, puis Himeji pour le chateau. Soiree a Kobe Harborland.",
         chips: ["Train + shinkansen", "Chateau de Himeji", "Nuit Kobe"],
-        points: [[34.2123, 135.5849], [34.8151, 134.6854], [34.6901, 135.1955]]
+        points: [[34.2123, 135.5849], [34.6937, 135.5023], [34.8151, 134.6854], [34.6901, 135.1955]]
       },
       {
         day: 5,
@@ -414,7 +415,7 @@
         title: "Kurashiki -> Hiroshima",
         text: "Matin sur les canaux de Kurashiki. Apres-midi en train via Okayama vers Hiroshima.",
         chips: ["1.5-2 h", "Canaux", "Nuit Hiroshima"],
-        points: [[34.585, 133.7719], [34.3853, 132.4553]]
+        points: [[34.585, 133.7719], [34.6551, 133.9195], [34.3853, 132.4553]]
       },
       {
         day: 7,
@@ -422,7 +423,8 @@
         title: "Hiroshima + Miyajima",
         text: "Matin au Parc Memorial de la Paix. Apres-midi en ferry vers Miyajima.",
         chips: ["Ferry 10-30 min", "Memorial", "Miyajima"],
-        points: [[34.3853, 132.4553], [34.2958, 132.3198]]
+        marker: [34.2958, 132.3198],
+        points: [[34.3853, 132.4553], [34.2958, 132.3198], [34.3853, 132.4553]]
       },
       {
         day: 8,
@@ -430,7 +432,7 @@
         title: "Hiroshima -> Onomichi -> Shimanami",
         text: "Train vers Fukuyama puis Onomichi. Option velo sur une portion de la Shimanami Kaido.",
         chips: ["40-50 min", "Onomichi", "Velo 4 h+"],
-        points: [[34.3853, 132.4553], [34.4089, 133.2058], [34.2298, 133.0966]]
+        points: [[34.3853, 132.4553], [34.4859, 133.3623], [34.4089, 133.2058], [34.2298, 133.0966]]
       },
       {
         day: 9,
@@ -501,15 +503,20 @@
 
     const mapDay = document.querySelector("#mapDay");
     const mapLabel = document.querySelector("#mapLabel");
-    const routePoints = days.flatMap((item, index) => index ? item.points.slice(1) : item.points);
+    const routePoints = [];
+    days.forEach((item) => {
+      item.points.forEach((point) => {
+        if (!samePoint(routePoints.at(-1), point)) routePoints.push(point);
+      });
+      item.routeEndIndex = routePoints.length - 1;
+    });
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const markers = new Map();
     let map;
     let progressLine;
 
-    function midpoint(points) {
-      const sums = points.reduce((acc, point) => [acc[0] + point[0], acc[1] + point[1]], [0, 0]);
-      return [sums[0] / points.length, sums[1] / points.length];
+    function samePoint(a, b) {
+      return Boolean(a && b && a[0] === b[0] && a[1] === b[1]);
     }
 
     function setActive(dayNumber, pan = true) {
@@ -525,8 +532,7 @@
       mapLabel.textContent = item.title;
 
       if (progressLine) {
-        const end = routePoints.findIndex((point) => point[0] === item.points.at(-1)[0] && point[1] === item.points.at(-1)[1]);
-        progressLine.setLatLngs(routePoints.slice(0, Math.max(end + 1, 1)));
+        progressLine.setLatLngs(routePoints.slice(0, item.routeEndIndex + 1));
       }
 
       if (pan && map) {
@@ -564,7 +570,7 @@
       }).addTo(map);
 
       days.forEach((item) => {
-        const marker = L.marker(midpoint(item.points), {
+        const marker = L.marker(item.marker || item.points.at(-1), {
           icon: L.divIcon({
             html: `<span class="stop-pin">${item.day}</span>`,
             className: "",
