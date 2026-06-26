@@ -204,6 +204,10 @@
       padding-bottom: 2rem;
     }
 
+    .route-overview {
+      min-height: min(58vh, 520px);
+    }
+
     .day-card {
       border: 1px solid rgba(23, 33, 29, 0.1);
       border-radius: 8px;
@@ -352,8 +356,8 @@
       <aside class="map-panel" aria-label="Carte interactive">
         <div id="map"></div>
         <div class="map-title" aria-live="polite">
-          <strong id="mapDay">Jour 1</strong>
-          <span id="mapLabel">Osaka -> Dotonbori</span>
+          <strong id="mapDay">Trajet complet</strong>
+          <span id="mapLabel">Osaka -> Kumamoto</span>
         </div>
       </aside>
       <section class="itinerary" id="itinerary" aria-label="Programme jour par jour"></section>
@@ -477,6 +481,11 @@
     ];
 
     const itinerary = document.querySelector("#itinerary");
+    const overviewSpacer = document.createElement("div");
+    overviewSpacer.className = "route-overview";
+    overviewSpacer.setAttribute("aria-hidden", "true");
+    itinerary.append(overviewSpacer);
+
     const cards = days.map((item) => {
       const card = document.createElement("article");
       card.className = "day-card";
@@ -503,20 +512,16 @@
 
     const mapDay = document.querySelector("#mapDay");
     const mapLabel = document.querySelector("#mapLabel");
-    const routePoints = [];
-    days.forEach((item) => {
-      item.points.forEach((point) => {
-        if (!samePoint(routePoints.at(-1), point)) routePoints.push(point);
-      });
-      item.routeEndIndex = routePoints.length - 1;
-    });
+    const stopPoints = days.map((item) => item.marker || item.points.at(-1));
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const markers = new Map();
     let map;
-    let progressLine;
+    let overviewLine;
+    let activeLine;
 
-    function samePoint(a, b) {
-      return Boolean(a && b && a[0] === b[0] && a[1] === b[1]);
+    function segmentFor(item) {
+      const index = item.day - 1;
+      return index === 0 ? item.points.slice(0, 2) : [stopPoints[index - 1], stopPoints[index]];
     }
 
     function setActive(dayNumber, pan = true) {
@@ -531,14 +536,26 @@
       mapDay.textContent = `Jour ${item.day} - ${item.date}`;
       mapLabel.textContent = item.title;
 
-      if (progressLine) {
-        progressLine.setLatLngs(routePoints.slice(0, item.routeEndIndex + 1));
+      const segment = segmentFor(item);
+      if (overviewLine) overviewLine.setStyle({ opacity: 0 });
+      if (activeLine) {
+        activeLine.setLatLngs(segment);
       }
 
       if (pan && map) {
-        const bounds = L.latLngBounds(item.points);
+        const bounds = L.latLngBounds(segment);
         map.flyToBounds(bounds.pad(0.72), { duration: prefersReducedMotion ? 0 : 0.8, maxZoom: 9 });
       }
+    }
+
+    function setOverview() {
+      cards.forEach((card) => card.classList.remove("active"));
+      markers.forEach((marker) => marker.getElement()?.querySelector(".stop-pin")?.classList.remove("active"));
+      mapDay.textContent = "Trajet complet";
+      mapLabel.textContent = "Osaka -> Kumamoto";
+      if (overviewLine) overviewLine.setStyle({ opacity: 0.7 });
+      if (activeLine) activeLine.setLatLngs([]);
+      if (map) map.fitBounds(L.latLngBounds(stopPoints).pad(0.16));
     }
 
     function initMap() {
@@ -557,13 +574,13 @@
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       }).addTo(map);
 
-      L.polyline(routePoints, {
+      overviewLine = L.polyline(stopPoints, {
         color: "#246b86",
         weight: 4,
-        opacity: 0.28
+        opacity: 0.7
       }).addTo(map);
 
-      progressLine = L.polyline([routePoints[0]], {
+      activeLine = L.polyline([], {
         color: "#c7462b",
         weight: 5,
         opacity: 0.95
@@ -587,8 +604,7 @@
         markers.set(item.day, marker);
       });
 
-      map.fitBounds(L.latLngBounds(routePoints).pad(0.12));
-      setActive(1, false);
+      setOverview();
     }
 
     initMap();
@@ -597,12 +613,18 @@
       const visible = entries
         .filter((entry) => entry.isIntersecting)
         .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (visible) setActive(Number(visible.target.dataset.day));
+      if (!visible) return;
+      if (visible.target === overviewSpacer) {
+        setOverview();
+        return;
+      }
+      setActive(Number(visible.target.dataset.day));
     }, {
       rootMargin: "-25% 0px -45% 0px",
       threshold: [0.25, 0.55, 0.85]
     });
 
+    observer.observe(overviewSpacer);
     cards.forEach((card) => observer.observe(card));
   </script>
 </body>
