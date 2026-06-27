@@ -205,7 +205,54 @@
 
     .route-overview {
       min-height: min(58vh, 520px);
+      display: grid;
+      align-items: end;
     }
+
+    .kotowaza-card {
+      padding: 1rem;
+      border: 1px solid rgba(23, 33, 29, 0.1);
+      border-radius: 8px;
+      background: rgba(255, 253, 248, 0.92);
+      box-shadow: 0 10px 28px rgba(23, 33, 29, 0.08);
+    }
+
+    .kotowaza-card h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1rem;
+    }
+
+    .kotowaza-jp {
+      margin: 0;
+      font-family: ui-serif, Georgia, "Times New Roman", serif;
+      font-size: clamp(1.7rem, 4vw, 2.6rem);
+      line-height: 1.08;
+    }
+
+    .kotowaza-romaji {
+      margin: 0.5rem 0 0;
+      color: var(--moss);
+      font-weight: 800;
+    }
+
+    .kotowaza-meaning {
+      min-height: 3rem;
+      margin: 0.55rem 0 0.9rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .kotowaza-card button {
+      padding: 0.55rem 0.8rem;
+      border: 1px solid rgba(23, 33, 29, 0.18);
+      border-radius: 8px;
+      color: var(--white);
+      background: var(--ink);
+      cursor: pointer;
+      font-weight: 850;
+    }
+
+    .kotowaza-card button:hover { background: var(--red); }
 
     .day-card {
       border: 1px solid rgba(23, 33, 29, 0.1);
@@ -314,6 +361,7 @@
       }
       #map { min-height: 48vh; }
       .map-title { left: 0.7rem; right: 0.7rem; bottom: 0.7rem; }
+      .route-overview { min-height: auto; }
       .day-card { scroll-margin-top: 52vh; }
       .day-body { padding-left: 1rem; }
     }
@@ -490,7 +538,15 @@
     const itinerary = document.querySelector("#itinerary");
     const overviewSpacer = document.createElement("div");
     overviewSpacer.className = "route-overview";
-    overviewSpacer.setAttribute("aria-hidden", "true");
+    overviewSpacer.innerHTML = `
+      <section class="kotowaza-card" aria-labelledby="kotowazaTitle">
+        <h2 id="kotowazaTitle">Kotowaza du jour</h2>
+        <p class="kotowaza-jp" id="kotowazaJp"></p>
+        <p class="kotowaza-romaji" id="kotowazaRomaji"></p>
+        <p class="kotowaza-meaning" id="kotowazaMeaning"></p>
+        <button type="button" id="kotowazaButton">Nouveau kotowaza</button>
+      </section>
+    `;
     itinerary.append(overviewSpacer);
 
     const cards = days.map((item) => {
@@ -521,6 +577,20 @@
 
     const mapDay = document.querySelector("#mapDay");
     const mapLabel = document.querySelector("#mapLabel");
+    const kotowazaJp = document.querySelector("#kotowazaJp");
+    const kotowazaRomaji = document.querySelector("#kotowazaRomaji");
+    const kotowazaMeaning = document.querySelector("#kotowazaMeaning");
+    const kotowazaButton = document.querySelector("#kotowazaButton");
+    const kotowaza = [
+      ["旅は道連れ世は情け", "Tabi wa michizure, yo wa nasake", "En voyage, le bon compagnon compte autant que la destination."],
+      ["千里の道も一歩から", "Senri no michi mo ippo kara", "Meme le tres long chemin commence par un premier pas."],
+      ["案ずるより産むが易し", "Anzuru yori umu ga yasushi", "Le faire est souvent moins dur que l'imaginer."],
+      ["住めば都", "Sumeba miyako", "Avec le temps, chaque endroit peut devenir chez soi."],
+      ["一期一会", "Ichigo ichie", "Une rencontre ne revient jamais exactement deux fois."],
+      ["七転び八起き", "Nana korobi ya oki", "Tomber sept fois, se relever huit fois."],
+      ["灯台下暗し", "Todai moto kurashi", "Ce qu'on cherche est parfois juste sous nos yeux."]
+    ];
+    let kotowazaIndex = -1;
     const stopPoints = days.map((item) => item.marker || item.points.at(-1));
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const markers = new Map();
@@ -549,6 +619,16 @@
       mapDay.textContent = "Trajet complet";
       mapLabel.textContent = "Osaka -> Kumamoto";
       if (map) map.fitBounds(L.latLngBounds(stopPoints).pad(0.16));
+    }
+
+    function showKotowaza() {
+      let next = Math.floor(Math.random() * kotowaza.length);
+      if (kotowaza.length > 1 && next === kotowazaIndex) next = (next + 1) % kotowaza.length;
+      kotowazaIndex = next;
+      const [jp, romaji, meaning] = kotowaza[next];
+      kotowazaJp.textContent = jp;
+      kotowazaRomaji.textContent = romaji;
+      kotowazaMeaning.textContent = meaning;
     }
 
     function initMap() {
@@ -589,6 +669,8 @@
     }
 
     initMap();
+    showKotowaza();
+    kotowazaButton.addEventListener("click", showKotowaza);
 
     const observer = new IntersectionObserver((entries) => {
       const visible = entries
