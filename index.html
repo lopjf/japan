@@ -206,10 +206,35 @@
     .route-overview {
       min-height: min(58vh, 520px);
       display: grid;
-      align-items: end;
+      align-content: end;
+      justify-items: start;
+      gap: 0.75rem;
+    }
+
+    .kotowaza-cta {
+      padding: 0.7rem 1rem;
+      border: 1px solid rgba(23, 33, 29, 0.18);
+      border-radius: 8px;
+      color: var(--white);
+      background: var(--red);
+      box-shadow: 0 12px 28px rgba(199, 70, 43, 0.22);
+      cursor: pointer;
+      font-weight: 900;
+      animation: kotowazaPulse 1.15s ease-in-out infinite;
+    }
+
+    .kotowaza-cta:disabled {
+      cursor: wait;
+      opacity: 0.75;
+    }
+
+    @keyframes kotowazaPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
     }
 
     .kotowaza-card {
+      width: 100%;
       padding: 1rem;
       border: 1px solid rgba(23, 33, 29, 0.1);
       border-radius: 8px;
@@ -217,12 +242,8 @@
       box-shadow: 0 10px 28px rgba(23, 33, 29, 0.08);
     }
 
-    .kotowaza-card h2 {
-      margin: 0 0 0.75rem;
-      font-size: 1rem;
-    }
-
     .kotowaza-jp {
+      min-height: 3rem;
       margin: 0;
       font-family: ui-serif, Georgia, "Times New Roman", serif;
       font-size: clamp(1.7rem, 4vw, 2.6rem);
@@ -241,18 +262,6 @@
       color: var(--muted);
       line-height: 1.5;
     }
-
-    .kotowaza-card button {
-      padding: 0.55rem 0.8rem;
-      border: 1px solid rgba(23, 33, 29, 0.18);
-      border-radius: 8px;
-      color: var(--white);
-      background: var(--ink);
-      cursor: pointer;
-      font-weight: 850;
-    }
-
-    .kotowaza-card button:hover { background: var(--red); }
 
     .day-card {
       border: 1px solid rgba(23, 33, 29, 0.1);
@@ -385,6 +394,7 @@
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
       .stop-pin { transition: none; }
+      .kotowaza-cta { animation: none; }
     }
   </style>
 </head>
@@ -539,12 +549,11 @@
     const overviewSpacer = document.createElement("div");
     overviewSpacer.className = "route-overview";
     overviewSpacer.innerHTML = `
-      <section class="kotowaza-card" aria-labelledby="kotowazaTitle">
-        <h2 id="kotowazaTitle">Kotowaza du jour</h2>
+      <button type="button" class="kotowaza-cta" id="kotowazaButton">Genere kotowaza</button>
+      <section class="kotowaza-card" aria-live="polite">
         <p class="kotowaza-jp" id="kotowazaJp"></p>
         <p class="kotowaza-romaji" id="kotowazaRomaji"></p>
         <p class="kotowaza-meaning" id="kotowazaMeaning"></p>
-        <button type="button" id="kotowazaButton">Nouveau kotowaza</button>
       </section>
     `;
     itinerary.append(overviewSpacer);
@@ -591,6 +600,7 @@
       ["灯台下暗し", "Todai moto kurashi", "Ce qu'on cherche est parfois juste sous nos yeux."]
     ];
     let kotowazaIndex = -1;
+    let kotowazaTimer;
     const stopPoints = days.map((item) => item.marker || item.points.at(-1));
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const markers = new Map();
@@ -621,14 +631,40 @@
       if (map) map.fitBounds(L.latLngBounds(stopPoints).pad(0.16));
     }
 
+    function typeText(element, text, speed, done) {
+      const chars = Array.from(text);
+      let index = 0;
+      element.textContent = "";
+
+      function tick() {
+        if (index >= chars.length) {
+          done?.();
+          return;
+        }
+        element.textContent += chars[index];
+        index += 1;
+        kotowazaTimer = window.setTimeout(tick, speed);
+      }
+
+      tick();
+    }
+
     function showKotowaza() {
+      window.clearTimeout(kotowazaTimer);
       let next = Math.floor(Math.random() * kotowaza.length);
       if (kotowaza.length > 1 && next === kotowazaIndex) next = (next + 1) % kotowaza.length;
       kotowazaIndex = next;
       const [jp, romaji, meaning] = kotowaza[next];
-      kotowazaJp.textContent = jp;
-      kotowazaRomaji.textContent = romaji;
-      kotowazaMeaning.textContent = meaning;
+      kotowazaRomaji.textContent = "";
+      kotowazaMeaning.textContent = "";
+      kotowazaButton.disabled = true;
+      typeText(kotowazaJp, jp, 55, () => {
+        typeText(kotowazaRomaji, romaji, 26, () => {
+          typeText(kotowazaMeaning, meaning, 16, () => {
+            kotowazaButton.disabled = false;
+          });
+        });
+      });
     }
 
     function initMap() {
@@ -669,7 +705,6 @@
     }
 
     initMap();
-    showKotowaza();
     kotowazaButton.addEventListener("click", showKotowaza);
 
     const observer = new IntersectionObserver((entries) => {
