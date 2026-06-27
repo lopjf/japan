@@ -207,7 +207,7 @@
       min-height: min(58vh, 520px);
       display: grid;
       align-content: end;
-      justify-items: start;
+      justify-items: center;
       gap: 0.75rem;
     }
 
@@ -216,8 +216,8 @@
       border: 1px solid rgba(23, 33, 29, 0.18);
       border-radius: 8px;
       color: var(--white);
-      background: var(--red);
-      box-shadow: 0 12px 28px rgba(199, 70, 43, 0.22);
+      background: var(--ink);
+      box-shadow: 0 12px 28px rgba(23, 33, 29, 0.22);
       cursor: pointer;
       font-weight: 900;
       animation: kotowazaPulse 1.15s ease-in-out infinite;
@@ -549,7 +549,7 @@
     const overviewSpacer = document.createElement("div");
     overviewSpacer.className = "route-overview";
     overviewSpacer.innerHTML = `
-      <button type="button" class="kotowaza-cta" id="kotowazaButton">Genere kotowaza</button>
+      <button type="button" class="kotowaza-cta" id="kotowazaButton">Génèrer Kotowaza</button>
       <section class="kotowaza-card" aria-live="polite">
         <p class="kotowaza-jp" id="kotowazaJp"></p>
         <p class="kotowaza-romaji" id="kotowazaRomaji"></p>
