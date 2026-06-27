@@ -92,13 +92,13 @@
     }
 
     h1 {
-      max-width: 12ch;
+      max-width: none;
       margin: 0;
       font-family: ui-serif, Georgia, "Times New Roman", serif;
-      font-size: 4.8rem;
+      font-size: clamp(2.05rem, 7vw, 4.8rem);
       line-height: 0.95;
       font-weight: 800;
-      text-wrap: balance;
+      white-space: nowrap;
     }
 
     .hero p {
@@ -360,7 +360,6 @@
     @media (max-width: 880px) {
       .topbar { padding: 0.7rem 0.9rem; }
       .hero { min-height: 66vh; padding: 5rem 1rem 2.4rem; }
-      h1 { font-size: 3.2rem; }
       .hero p { font-size: 1rem; }
       main { width: min(100% - 1rem, 760px); margin-top: -1rem; }
       .route-wrap { grid-template-columns: 1fr; }
@@ -379,7 +378,6 @@
     @media (max-width: 520px) {
       .brand { max-width: 12rem; }
       .topbar a { display: none; }
-      h1 { font-size: 2.6rem; }
       .stats span { width: 100%; }
       .map-panel, #map { min-height: 45vh; }
       .day-head { grid-template-columns: 1fr; }
